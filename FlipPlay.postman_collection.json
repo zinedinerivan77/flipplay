@@ -1,0 +1,199 @@
+{
+  "info": {
+    "name": "FlipPlay REST API",
+    "description": "Happy-path and validation/error scenarios for the FlipPlay Laravel API.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://127.0.0.1:8000/api" },
+    { "key": "userId", "value": "" },
+    { "key": "mediaId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Create user",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\":\"Ayu\",\"email\":\"{{userEmail}}\",\"password\":\"password123\"}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/users"
+      },
+      "event": [{
+        "listen": "prerequest",
+        "script": {
+          "type": "text/javascript",
+          "exec": ["pm.collectionVariables.set('userEmail', 'flipplay-' + Date.now() + '@example.test');"]
+        }
+      }, {
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('user created', function () { pm.response.to.have.status(201); });",
+            "if (pm.response.code === 201) pm.collectionVariables.set('userId', pm.response.json().data.id);"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "Create media",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\":\"{{mediaTitle}}\",\"type\":\"anime\",\"genre\":\"Adventure\",\"year\":2024}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/media"
+      },
+      "event": [{
+        "listen": "prerequest",
+        "script": {
+          "type": "text/javascript",
+          "exec": ["pm.collectionVariables.set('mediaTitle', 'Postman Sample Media ' + Date.now());"]
+        }
+      }, {
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('media created', function () { pm.response.to.have.status(201); });",
+            "if (pm.response.code === 201) pm.collectionVariables.set('mediaId', pm.response.json().data.id);"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "Reject empty media title",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\":\"\",\"type\":\"anime\",\"genre\":\"Adventure\",\"year\":2024}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/media"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": ["pm.test('empty title rejected', function () { pm.response.to.have.status(422); });"] }
+      }]
+    },
+    {
+      "name": "Reject duplicate media title",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\":\"{{mediaTitle}}\",\"type\":\"anime\",\"genre\":\"Adventure\",\"year\":2024}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/media"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": ["pm.test('duplicate title rejected', function () { pm.response.to.have.status(422); });"] }
+      }]
+    },
+    {
+      "name": "List/search media",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": "{{baseUrl}}/media?search=Postman&include_users=true"
+      }
+    },
+    {
+      "name": "Show media with collection owners",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": "{{baseUrl}}/media/{{mediaId}}"
+      }
+    },
+    {
+      "name": "Update media",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"description\":\"Updated from Postman\"}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/media/{{mediaId}}"
+      }
+    },
+    {
+      "name": "Add media to collection",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": "{{baseUrl}}/users/{{userId}}/collection/{{mediaId}}"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": ["pm.test('media added', function () { pm.response.to.have.status(201); });"] }
+      }]
+    },
+    {
+      "name": "Reject duplicate collection entry",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": "{{baseUrl}}/users/{{userId}}/collection/{{mediaId}}"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": ["pm.test('duplicate collection entry rejected', function () { pm.response.to.have.status(409); });"] }
+      }]
+    },
+    {
+      "name": "Show user collection",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": "{{baseUrl}}/users/{{userId}}/collection"
+      }
+    },
+    {
+      "name": "Remove media from collection",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": "{{baseUrl}}/users/{{userId}}/collection/{{mediaId}}"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": ["pm.test('media removed', function () { pm.response.to.have.status(204); });"] }
+      }]
+    },
+    {
+      "name": "Reject removal from empty collection",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": "{{baseUrl}}/users/{{userId}}/collection/{{mediaId}}"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": ["pm.test('missing collection entry rejected', function () { pm.response.to.have.status(404); });"] }
+      }]
+    },
+    {
+      "name": "Delete media",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": "{{baseUrl}}/media/{{mediaId}}"
+      }
+    }
+  ]
+}
